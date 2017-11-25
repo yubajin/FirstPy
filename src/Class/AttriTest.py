@@ -10,11 +10,16 @@ class Programer(object):
         self.name = name
         self._age = age
         self.__weight = weight
-        
+
+    def get_name(self):
+        return  self.name
+
     def get_weight(self):
         return self.__weight
     
 if __name__ == '__main__':
     programer = Programer('YuBajin',20,56)
+
+    print(programer.get_name())
     print (dir(programer))
     print(programer.__dict__)
