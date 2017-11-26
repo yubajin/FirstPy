@@ -59,11 +59,18 @@ class StackListUtils(object):
 # a.push(2)
 # a.push(4)
 # a.push(5)
-# a.push({'id':1,'name':2})
+# a.push({1:'first',2:'two'})
+# temp = StackListUtils()
+# temp = dict(a.peek()).pop(1)
+# print(a.peek())
+# a.updateLastNode(temp)
+# print(a.peek())
+
+
+
 # a.push(6)
 # a.updateLastNode(90)
 # # a.clear()
-# print(a.peek())
 # print(a.pop())
 # print(a.pop())
 # print(a.pop())
