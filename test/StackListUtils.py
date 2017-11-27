@@ -36,11 +36,31 @@ class StackListUtils(object):
         else:
             return popNode.get_val()
 
-    def updateLastNode(self,val):
+    #delete
+    '''
+        如果最后一个元素是一个字典，删除字典里面的某条数据
+    '''
+    def peekDelDicById(self, id):
+        if isinstance(StackListUtils.header.get_val(),dict):
+            StackListUtils.header.get_val().pop(int(id))
+        else:
+            print('栈的最后一个元素不是字典')
+        return  StackListUtils.header.get_val()
+
+    #updata
+    def updateLastNode(self, val):
         tempNode = StackListUtils.header
         if tempNode.get_next() == None:
             return
-        tempNode.set_val(val)
+        StackListUtils.header.set_val(val)
+
+    '''
+        如果最后一个元素是一个字典，更改字典里面的某条数据
+    '''
+    def peekUpdateDicById(self, id, field, value):
+        if isinstance(StackListUtils.header.get_val()[int(id)], dict):
+            tempdict = {field:value}
+            StackListUtils.header.get_val()[int(id)].update(tempdict)
 
     def isEmpty(self):
         if(StackListUtils.header.get_next() == None):
@@ -54,27 +74,3 @@ class StackListUtils(object):
     def getAllNode(self):
         pass
 
-
-# a = StackListUtils()
-# a.push(2)
-# a.push(4)
-# a.push(5)
-# a.push({1:'first',2:'two'})
-# temp = StackListUtils()
-# temp = dict(a.peek()).pop(1)
-# print(a.peek())
-# a.updateLastNode(temp)
-# print(a.peek())
-
-
-
-# a.push(6)
-# a.updateLastNode(90)
-# # a.clear()
-# print(a.pop())
-# print(a.pop())
-# print(a.pop())
-# print(a.pop())
-# print(a.isEmpty())
-# print(a.pop())
-# print(a.pop())

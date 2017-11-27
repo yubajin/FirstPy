@@ -68,12 +68,13 @@ class mydatabase(object):
     def selectAll(self):
         fields_num = 0
         if not dict(self.getPeekTable()).__len__() == 0:
-            fields_num = dict(self.getPeekTable()[1]).__len__()#获取属性个数
+            fields_num = self.getFields().__len__()#获取属性个数
 
+        recodeCount = 0#数记录总共条数
         if not fields_num == 0:
             header_wrap = '+---------------' * fields_num + '+---------------+'
             formatStr = '|%-15s' * fields_num + '|%-15s|'
-            keys = dict(self.getPeekTable()[1]).keys()
+            keys = self.getFields()
             fields = []
             fields.append('id')
             for key in keys:
@@ -82,7 +83,6 @@ class mydatabase(object):
             print(header_wrap)
             print(header)
             print(header_wrap)
-            recodeCount = 0
             for key, value in dict(self.getPeekTable()).items():#遍历每一条记录
                 recodeCount = recodeCount + 1
                 recodesValue = []
@@ -93,19 +93,17 @@ class mydatabase(object):
                 result = (formatStr) % (tuple(recodesValue))
                 print(result)
             print(header_wrap)
-            print("{} rows in database".format(recodeCount))
+        print("{} rows in database".format(recodeCount))
 
     def selectById(self):
         pass
 
     def del_recode(self, id):
-        print('pop前:',self.getPeekTable())
-        dict(self.getPeekTable()).pop(id)
-        print('pop后:',self.getPeekTable())
+        self.getTables().peekDelDicById(id)
         print('一条记录被删除')
 
-    def update_recode(self):
-        pass
+    def update_recode(self, id, field, value):
+        self.getTables().peekUpdateDicById(id, field, value)
 
     def alter_table(self):
         pass
@@ -150,29 +148,49 @@ class mydatabase(object):
                 delId = int(userinputre.group(2).replace(' ', '').split('=')[1])
                 self.del_recode(delId)
 
+            # update database set name = 'haschange', guowen_score = 60, math_score = 70 where id = 1
+            elif (userinput[0:6] == 'update'):
+                userinputre = re.search(r'update database set (.*) where (.*)', userinput, re.M | re.I)
+                keys_values = userinputre.group(1).replace(' ', '').split(',')
+                keys = []
+                values = []
+                for key_value in keys_values:#获取用户输入的属性和属性的值
+                    keys.append(key_value.split('=')[0])#属性
+                    values.append(key_value.split('=')[1])#属性的值
+                tempkeys_values = zip(keys,values)
+                updateId = int(userinputre.group(2).replace(' ', '').split('=')[1])
+                countField = 0
+                for key,value in tempkeys_values:
+                    print('key',key,'value',value)
+                    self.update_recode(updateId,key,eval(value))
+                    countField = countField + 1
+                print('一条记录的' + str(countField) + '个属性已经更改')
+
             elif (userinput == 'exit()'):
                 flag = True
 
 db = mydatabase()
-db.create_table(['name','guowen_score','guowen_weight','math_score','math_weight'])
-db.add_recode(['zhangshang',89,2,94,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
-db.add_recode(['lisi',87,2,98,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
-db.del_recode(1)
-db.selectAll()
+# db.create_table(['name','guowen_score','guowen_weight','math_score','math_weight'])
+# db.add_recode(['zhangshang',89,2,94,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
+# db.add_recode(['lisi',87,2,98,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
+# db.del_recode(1)
+# db.update_recode(2,'name','changed')#需要检查要更改的属性是否在表里存在
+# db.selectAll()
 
-# db.run()
+db.run()
 
 # print(dict(db.getPeekTable()))
-#create table (name,guowen_score,guowen_weight,math_score,math_weight)
+# create table (name,guowen_score,guowen_weight,math_score,math_weight)
 # insert (name,guowen_score,guowen_weight,math_score,math_weight) values ('zhangshagn',94 ,2,84,3)
 # insert (name,guowen_score,guowen_weight,math_score,math_weight) values ('lisi',89 ,2,96,3)
-
+#
 # select * from database
+# select * from database sortby average
+#delete database where id = 2
+#update database set name = 'haschange', guowen_score = 60, math_score = 70 where id = 1
 
 #create table (name1,guowen_score1,guowen_weight1,math_score1,math_weight1)
 # insert (name1,guowen_score1,guowen_weight1,math_score1,math_weight1) values ('wanglaowu_1',94,4 ,84,7)
 
-# select * from database sortby average
-#delete database where id = 2
-#update database set name = 'haschange', guowen_score = 60, math_score = 70 where id = 1
+
 
