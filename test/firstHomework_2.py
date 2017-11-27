@@ -187,7 +187,7 @@ class mydatabase(object):
                 for key,value in tempkeys_values:
                     self.update_recode(updateId,key,eval(value))
                     countField = countField + 1
-                print('一条记录的' + str(countField) + '个属性已经更改')
+                print('一条记录的' + str(countField) + '个属性值已经更改')
             #alter database add average
             elif (userinput[0:5] == 'alter'):
                 userinputre = re.search(r'alter database add (.*)', userinput, re.M | re.I)
