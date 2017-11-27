@@ -3,6 +3,11 @@
 2.在添加操作之前需要检验是否有建表
 3.需要检验输入的sql语句是否符合规范
 
+4.支持动态添加表格字段
+5.支持建多张表进行操作
+6.执行用sql语句进行操作
+7、支持算出给定分数列表和权重列表的均值
+
 '''
 from test.StackListUtils import *
 import re
@@ -59,17 +64,28 @@ class mydatabase(object):
         for (field,value) in field_value:
             content.setdefault(field,value)
         recode[self.getId()] = content
-
-        # print(recode)
-
         self.setPeekTable(recode)
         print('一行受影响')
 
-    def selectAll(self):
-        fields_num = 0
-        if not dict(self.getPeekTable()).__len__() == 0:
-            fields_num = self.getFields().__len__()#获取属性个数
+    '''
+        传入表的列名列表(字符),分数列表，权重列表，将加权放置给加权列表
+    '''
+    def calAverage(self, scoreColumn, weightColumn, averageColumn):
+        self.alter_table(averageColumn)
+        for key, value in dict(self.getPeekTable()).items():
+            totalscore = 0
+            totalweight = 0
+            score_weightLists = zip(scoreColumn, weightColumn)
+            for (tempscore, tempweight) in score_weightLists:
+                totalscore = totalscore + int(self.getPeekTable()[key][tempscore]) * int(self.getPeekTable()[key][tempweight])
+                totalweight = totalweight + int(self.getPeekTable()[key][tempweight])
+            average = totalscore / totalweight
+            self.getPeekTable()[key][averageColumn] = average
+        self.getPeekTable()
 
+    def selectAll(self):
+        print('整个数据库:',self.getPeekTable())
+        fields_num = self.getFields().__len__()#获取属性个数
         recodeCount = 0#数记录总共条数
         if not fields_num == 0:
             header_wrap = '+---------------' * fields_num + '+---------------+'
@@ -105,8 +121,17 @@ class mydatabase(object):
     def update_recode(self, id, field, value):
         self.getTables().peekUpdateDicById(id, field, value)
 
-    def alter_table(self):
-        pass
+    ''' 
+        增加单个数据库字段
+        需要将之前的记录该字段置为None
+    '''
+    def alter_table(self, field):
+        fields_num = self.getFields().__len__()  # 获取原来属性个数
+        self.getFields().append(field)
+        for key, value in dict(self.getPeekTable()).items():  # 遍历每一条记录
+            if isinstance(self.getPeekTable()[key],dict):
+                self.getPeekTable()[key][(self.getFields()[fields_num])] = None
+        print('增加了一个字段')
 
     def run(self):
         flag = False
@@ -148,7 +173,6 @@ class mydatabase(object):
                 delId = int(userinputre.group(2).replace(' ', '').split('=')[1])
                 self.del_recode(delId)
 
-            # update database set name = 'haschange', guowen_score = 60, math_score = 70 where id = 1
             elif (userinput[0:6] == 'update'):
                 userinputre = re.search(r'update database set (.*) where (.*)', userinput, re.M | re.I)
                 keys_values = userinputre.group(1).replace(' ', '').split(',')
@@ -161,22 +185,29 @@ class mydatabase(object):
                 updateId = int(userinputre.group(2).replace(' ', '').split('=')[1])
                 countField = 0
                 for key,value in tempkeys_values:
-                    print('key',key,'value',value)
                     self.update_recode(updateId,key,eval(value))
                     countField = countField + 1
                 print('一条记录的' + str(countField) + '个属性已经更改')
-
+            #alter database add average
+            elif (userinput[0:5] == 'alter'):
+                userinputre = re.search(r'alter database add (.*)', userinput, re.M | re.I)
+                addField = userinputre.group(1).replace(' ', '')
+                self.alter_table(addField)
             elif (userinput == 'exit()'):
                 flag = True
 
 db = mydatabase()
-# db.create_table(['name','guowen_score','guowen_weight','math_score','math_weight'])
-# db.add_recode(['zhangshang',89,2,94,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
-# db.add_recode(['lisi',87,2,98,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
+db.create_table(['name','guowen_score','guowen_weight','math_score','math_weight'])
+db.add_recode(['zhangshang',89,2,94,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
+db.add_recode(['lisi',87,2,98,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
 # db.del_recode(1)
-# db.update_recode(2,'name','changed')#需要检查要更改的属性是否在表里存在
-# db.selectAll()
+db.update_recode(2,'name','changed')#需要检查要更改的属性是否在表里存在
+db.calAverage(['guowen_score','math_score'],['guowen_weight','math_weight'],'average')
+db.selectAll()
 
+# db.alter_table('average')
+# db.add_recode(['wangwu',78,3,90,2,85.8])
+# db.selectAll()
 db.run()
 
 # print(dict(db.getPeekTable()))
