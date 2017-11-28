@@ -6,8 +6,8 @@
 4.支持动态添加表格字段
 5.支持建多张表进行操作
 6.执行用sql语句进行操作
-7、支持算出给定分数列表和权重列表的均值
-
+7.支持自动算出带score的分数列表和带weight的权重列表的加权平均，若新添加的列也带score和weight也会自动算入加权平均
+8.支持按照用户输入的列来进行升序还是降序的排序
 '''
 from test.StackListUtils import *
 import re
@@ -16,6 +16,8 @@ class mydatabase(object):
         self.__tables = StackListUtils()
         self.__tables.push({})
         self.__fields = []
+        self.scoreColumn = []
+        self.weightColumn = []
         self.__id = 0
 
     def getTables(self):
@@ -36,8 +38,27 @@ class mydatabase(object):
     def setFields(self, fields):
         self.__fields = fields
 
+    def getScoreColumn(self):
+        return self.scoreColumn
+
+    def setScoreColumn(self):
+        self.scoreColumn = []
+        for field in self.getFields():
+            if 'score' in field:
+                self.scoreColumn.append(field)
+
+    def getWeightColumn(self):
+        return self.weightColumn
+
+    def setWeightColumn(self):
+        self.weightColumn  = []
+        for field in self.getFields():
+            if 'weight' in field:
+                self.weightColumn.append(field)
+
     def getId(self):
         return self.__id
+
     def setId(self, id):
         self.__id = id
 
@@ -45,6 +66,12 @@ class mydatabase(object):
         self.__id = self.__id + 1
         return self.__id
 
+    def sortBy(self, isreverse, referColumn):
+        self.setScoreColumn()#扫描带score的列
+        self.setWeightColumn()#扫描带weight的列
+        if not self.getScoreColumn().__len__() == 0 and not self.getWeightColumn().__len__() == 0:
+            self.calAverage(self.getScoreColumn(),self.getWeightColumn(),'average')
+        return dict(sorted(self.getPeekTable().items(), key=lambda x: x[1][referColumn], reverse=isreverse))
 
     '''
     创建表
@@ -53,7 +80,7 @@ class mydatabase(object):
         self.addTable({})
         self.setId(0)
         self.setFields(fields)
-        print('创建表的属性:',self.getFields())
+        return '创建表的属性:' + str(self.getFields())
 
     def add_recode(self, values):
         fields = self.getFields()
@@ -65,26 +92,32 @@ class mydatabase(object):
             content.setdefault(field,value)
         recode[self.getId()] = content
         self.setPeekTable(recode)
-        print('一行受影响')
+        return '增加一条记录'
 
     '''
         传入表的列名列表(字符),分数列表，权重列表，将加权放置给加权列表
     '''
     def calAverage(self, scoreColumn, weightColumn, averageColumn):
-        self.alter_table(averageColumn)
+        if not averageColumn in self.getFields():
+            print('自动',self.alter_table(averageColumn),'average')
         for key, value in dict(self.getPeekTable()).items():
             totalscore = 0
             totalweight = 0
             score_weightLists = zip(scoreColumn, weightColumn)
             for (tempscore, tempweight) in score_weightLists:
-                totalscore = totalscore + int(self.getPeekTable()[key][tempscore]) * int(self.getPeekTable()[key][tempweight])
-                totalweight = totalweight + int(self.getPeekTable()[key][tempweight])
-            average = totalscore / totalweight
+                if not self.getPeekTable()[key][tempscore] == None and not self.getPeekTable()[key][tempweight] == None:
+                    totalscore = totalscore + int(self.getPeekTable()[key][tempscore]) * int(self.getPeekTable()[key][tempweight])
+                    totalweight = totalweight + int(self.getPeekTable()[key][tempweight])
+            average = round(totalscore / totalweight,2)
             self.getPeekTable()[key][averageColumn] = average
         self.getPeekTable()
 
-    def selectAll(self):
-        print('整个数据库:',self.getPeekTable())
+    def selectAll(self, table):
+        self.setScoreColumn()#扫描带score的列
+        self.setWeightColumn()#扫描带weight的列
+        if not self.getScoreColumn().__len__() == 0 and not self.getWeightColumn().__len__() == 0:
+            self.calAverage(self.getScoreColumn(),self.getWeightColumn(),'average')
+        print('整个数据库:',table)
         fields_num = self.getFields().__len__()#获取属性个数
         recodeCount = 0#数记录总共条数
         if not fields_num == 0:
@@ -99,24 +132,24 @@ class mydatabase(object):
             print(header_wrap)
             print(header)
             print(header_wrap)
-            for key, value in dict(self.getPeekTable()).items():#遍历每一条记录
+            for key, value in dict(table).items():#遍历每一条记录
                 recodeCount = recodeCount + 1
                 recodesValue = []
                 recodesValue.append(int(key))
                 for i in range(1,fields_num + 1):#遍历每条记录的每个属性
-                    recodeValue = dict(dict(self.getPeekTable()[key]))[(fields[i])]
+                    recodeValue = table[key][(fields[i])]
                     recodesValue.append(recodeValue)
                 result = (formatStr) % (tuple(recodesValue))
                 print(result)
             print(header_wrap)
-        print("{} rows in database".format(recodeCount))
+        print("{} rows in table".format(recodeCount))
 
     def selectById(self):
         pass
 
     def del_recode(self, id):
         self.getTables().peekDelDicById(id)
-        print('一条记录被删除')
+        return '一条记录被删除'
 
     def update_recode(self, id, field, value):
         self.getTables().peekUpdateDicById(id, field, value)
@@ -131,7 +164,7 @@ class mydatabase(object):
         for key, value in dict(self.getPeekTable()).items():  # 遍历每一条记录
             if isinstance(self.getPeekTable()[key],dict):
                 self.getPeekTable()[key][(self.getFields()[fields_num])] = None
-        print('增加了一个字段')
+        return '增加了一个字段'
 
     def run(self):
         flag = False
@@ -140,9 +173,9 @@ class mydatabase(object):
             if(userinput[0:6] == 'create'):
                 userinputre = re.search(r'create table (.*)', userinput, re.M | re.I)
                 fieldArr = userinputre.group(1).lstrip('(').rstrip(')').replace(' ', '').split(',')
-                self.create_table(fieldArr)
+                print(self.create_table(fieldArr))
             if (userinput[0:6] == 'insert'):
-                userinputre = re.search(r'insert (.*) values (.*)', userinput, re.M | re.I)
+                userinputre = re.search(r'insert table (.*) values (.*)', userinput, re.M | re.I)
                 fieldArr = userinputre.group(1).lstrip('(').rstrip(')').replace(' ', '').split(',')
                 valueArr = userinputre.group(2).lstrip('(').rstrip(')').replace(' ', '').split(',')
                 index = 0
@@ -160,22 +193,29 @@ class mydatabase(object):
 
                 print('用户输入的属性是否和表的属性一致:' ,sentenceMatch)
                 if(sentenceMatch):
-                    self.add_recode(valueArr)
+                    print(self.add_recode(valueArr))
 
             elif (userinput[0:6] == 'select'):
-                if (userinput == 'select * from database'):
-                    self.selectAll()
-                elif (userinput == 'select * from database sortby average'):
-                    pass
+                if (userinput == 'select * from table'):
+                    self.selectAll(self.getPeekTable())
+                elif (userinput[-3:] == 'asc'):
+                    userinputre = re.search(r'select (.*) from table sortby (.*) asc', userinput, re.M | re.I)
+                    print(userinputre)
+                    sortbyField = userinputre.group(2).replace(' ', '')
+                    db.selectAll(self.sortBy(False, sortbyField))
+                elif (userinput[-3:] == 'des'):
+                    userinputre = re.search(r'select (.*) from table sortby (.*) des', userinput, re.M | re.I)
+                    sortbyField = userinputre.group(2).replace(' ', '')
+                    db.selectAll(self.sortBy(True, 'average'))
 
             elif (userinput[0:6] == 'delete'):
                 userinputre = re.search(r'delete (.*) where (.*)', userinput, re.M | re.I)
                 delId = int(userinputre.group(2).replace(' ', '').split('=')[1])
-                self.del_recode(delId)
+                print(self.del_recode(delId))
 
             elif (userinput[0:6] == 'update'):
-                userinputre = re.search(r'update database set (.*) where (.*)', userinput, re.M | re.I)
-                keys_values = userinputre.group(1).replace(' ', '').split(',')
+                userinputre = re.search(r'update table set (.*) where (.*)', userinput, re.M | re.I)
+                keys_values = userinputre.group(1).lstrip('(').rstrip(')').replace(' ', '').split(',')
                 keys = []
                 values = []
                 for key_value in keys_values:#获取用户输入的属性和属性的值
@@ -190,38 +230,48 @@ class mydatabase(object):
                 print('一条记录的' + str(countField) + '个属性值已经更改')
             #alter database add average
             elif (userinput[0:5] == 'alter'):
-                userinputre = re.search(r'alter database add (.*)', userinput, re.M | re.I)
+                userinputre = re.search(r'alter table add (.*)', userinput, re.M | re.I)
                 addField = userinputre.group(1).replace(' ', '')
-                self.alter_table(addField)
+                print(self.alter_table(addField))
             elif (userinput == 'exit()'):
                 flag = True
 
 db = mydatabase()
-db.create_table(['name','guowen_score','guowen_weight','math_score','math_weight'])
-db.add_recode(['zhangshang',89,2,94,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
-db.add_recode(['lisi',87,2,98,3])#需要检查创建表的属性要与增加记录的值的个数一一对应
-# db.del_recode(1)
+print(db.create_table(['name','guowen_score','guowen_weight','math_score','math_weight']))
+print(db.add_recode(['zhangshang',89,2,94,3]))#需要检查创建表的属性要与增加记录的值的个数一一对应
+print(db.add_recode(['lisi',87,2,98,3]))#需要检查创建表的属性要与增加记录的值的个数一一对应
+print(db.alter_table('pe_score'))
+print(db.alter_table('pe_weight'))
+
+# print(db.del_recode(1))
 db.update_recode(2,'name','changed')#需要检查要更改的属性是否在表里存在
-db.calAverage(['guowen_score','math_score'],['guowen_weight','math_weight'],'average')
-db.selectAll()
+
+# db.selectAll(db.getPeekTable())
+db.selectAll(db.sortBy(True, 'average'))
+print(db.add_recode(['zhangshang',89,2,94,3,99,2]))
+# db.selectAll(db.getPeekTable())
+db.selectAll(db.sortBy(False, 'average'))
 
 # db.alter_table('average')
 # db.add_recode(['wangwu',78,3,90,2,85.8])
 # db.selectAll()
 db.run()
 
-# print(dict(db.getPeekTable()))
 # create table (name,guowen_score,guowen_weight,math_score,math_weight)
-# insert (name,guowen_score,guowen_weight,math_score,math_weight) values ('zhangshagn',94 ,2,84,3)
-# insert (name,guowen_score,guowen_weight,math_score,math_weight) values ('lisi',89 ,2,96,3)
+# insert table (name,guowen_score,guowen_weight,math_score,math_weight) values ('zhangshagn',94 ,2,84,3)
+# insert table (name,guowen_score,guowen_weight,math_score,math_weight) values ('lisi',89 ,2,96,3)
 #
-# select * from database
-# select * from database sortby average
-#delete database where id = 2
-#update database set name = 'haschange', guowen_score = 60, math_score = 70 where id = 1
+# select * from table
+# select * from table sortby average
+#delete table where id = 2
+#update table set (name = 'haschange', guowen_score = 60, math_score = 70) where id = 1
 
 #create table (name1,guowen_score1,guowen_weight1,math_score1,math_weight1)
-# insert (name1,guowen_score1,guowen_weight1,math_score1,math_weight1) values ('wanglaowu_1',94,4 ,84,7)
+# insert table (name1,guowen_score1,guowen_weight1,math_score1,math_weight1) values ('wanglaowu_1',94,4 ,84,7)
 
+#create table (username,password)
+#insert table (username,password) values ('xiaoming',123456)
+#update table set (username = 'xiaohong', password = 13579) where id = 2
+#select * from table
 
-
+# select * from table sortby average asc
