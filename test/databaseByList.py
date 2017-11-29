@@ -1,20 +1,11 @@
-'''
-1.需要检查输入的数据库字段和值个数是否一一对应
-2.在添加操作之前需要检验是否有建表
-3.需要检验输入的sql语句是否符合规范
 
-4.支持动态添加表格字段
-5.支持建多张表进行操作
-6.执行用sql语句进行操作
-7.支持自动算出带score的分数列表和带weight的权重列表的加权平均，若新添加的列也带score和weight也会自动算入加权平均
-8.支持按照用户输入的列来进行升序还是降序的排序
-'''
 from test.StackListUtils import *
 import re
-class mydatabase(object):
+
+class databaseByDictory(object):
     def __init__(self):
         self.__tables = StackListUtils()
-        self.__tables.push({})
+        self.__tables.push([])#数据用列表存储
         self.__fields = []
         self.scoreColumn = []
         self.weightColumn = []
@@ -117,7 +108,6 @@ class mydatabase(object):
         self.setWeightColumn()#扫描带weight的列
         if not self.getScoreColumn().__len__() == 0 and not self.getWeightColumn().__len__() == 0:
             self.calAverage(self.getScoreColumn(),self.getWeightColumn(),'average')
-        print('整个数据库:',table)
         fields_num = self.getFields().__len__()#获取属性个数
         recodeCount = 0#数记录总共条数
         if not fields_num == 0:
@@ -200,13 +190,12 @@ class mydatabase(object):
                     self.selectAll(self.getPeekTable())
                 elif (userinput[-3:] == 'asc'):
                     userinputre = re.search(r'select (.*) from table sortby (.*) asc', userinput, re.M | re.I)
-                    print(userinputre)
                     sortbyField = userinputre.group(2).replace(' ', '')
-                    db.selectAll(self.sortBy(False, sortbyField))
+                    self.selectAll(self.sortBy(False, sortbyField))
                 elif (userinput[-3:] == 'des'):
                     userinputre = re.search(r'select (.*) from table sortby (.*) des', userinput, re.M | re.I)
                     sortbyField = userinputre.group(2).replace(' ', '')
-                    db.selectAll(self.sortBy(True, 'average'))
+                    self.selectAll(self.sortBy(True, 'average'))
 
             elif (userinput[0:6] == 'delete'):
                 userinputre = re.search(r'delete (.*) where (.*)', userinput, re.M | re.I)
@@ -228,50 +217,9 @@ class mydatabase(object):
                     self.update_recode(updateId,key,eval(value))
                     countField = countField + 1
                 print('一条记录的' + str(countField) + '个属性值已经更改')
-            #alter database add average
             elif (userinput[0:5] == 'alter'):
                 userinputre = re.search(r'alter table add (.*)', userinput, re.M | re.I)
                 addField = userinputre.group(1).replace(' ', '')
                 print(self.alter_table(addField))
             elif (userinput == 'exit()'):
                 flag = True
-
-db = mydatabase()
-print(db.create_table(['name','guowen_score','guowen_weight','math_score','math_weight']))
-print(db.add_recode(['zhangshang',89,2,94,3]))#需要检查创建表的属性要与增加记录的值的个数一一对应
-print(db.add_recode(['lisi',87,2,98,3]))#需要检查创建表的属性要与增加记录的值的个数一一对应
-print(db.alter_table('pe_score'))
-print(db.alter_table('pe_weight'))
-
-# print(db.del_recode(1))
-db.update_recode(2,'name','changed')#需要检查要更改的属性是否在表里存在
-
-# db.selectAll(db.getPeekTable())
-db.selectAll(db.sortBy(True, 'average'))
-print(db.add_recode(['zhangshang',89,2,94,3,99,2]))
-# db.selectAll(db.getPeekTable())
-db.selectAll(db.sortBy(False, 'average'))
-
-# db.alter_table('average')
-# db.add_recode(['wangwu',78,3,90,2,85.8])
-# db.selectAll()
-db.run()
-
-# create table (name,guowen_score,guowen_weight,math_score,math_weight)
-# insert table (name,guowen_score,guowen_weight,math_score,math_weight) values ('zhangshagn',94 ,2,84,3)
-# insert table (name,guowen_score,guowen_weight,math_score,math_weight) values ('lisi',89 ,2,96,3)
-#
-# select * from table
-# select * from table sortby average
-#delete table where id = 2
-#update table set (name = 'haschange', guowen_score = 60, math_score = 70) where id = 1
-
-#create table (name1,guowen_score1,guowen_weight1,math_score1,math_weight1)
-# insert table (name1,guowen_score1,guowen_weight1,math_score1,math_weight1) values ('wanglaowu_1',94,4 ,84,7)
-
-#create table (username,password)
-#insert table (username,password) values ('xiaoming',123456)
-#update table set (username = 'xiaohong', password = 13579) where id = 2
-#select * from table
-
-# select * from table sortby average asc
