@@ -47,6 +47,25 @@ class StackListUtils(object):
             print('栈的最后一个元素不是字典')
         return  StackListUtils.header.get_val()
 
+    '''
+        如果最后一个元素是一个列表，删除列表里面的某条数据
+    '''
+    def peekDelListById(self, id):
+        returnStr = ''
+        find = False
+        if isinstance(StackListUtils.header.get_val(),list):
+            for indextable in StackListUtils.header.get_val():
+                if not list(indextable).__len__() == 0:
+                    if indextable[0] == id:
+                        find = True
+                        StackListUtils.header.get_val().remove(indextable)
+                        returnStr = '一条记录被删除'
+            if find == False:
+                returnStr = 'id不存在'
+        else:
+            returnStr = '栈的最后一个元素不是列表'
+        return  returnStr
+
     #updata
     def updateLastNode(self, val):
         tempNode = StackListUtils.header
@@ -61,6 +80,26 @@ class StackListUtils(object):
         if isinstance(StackListUtils.header.get_val()[int(id)], dict):
             tempdict = {field:value}
             StackListUtils.header.get_val()[int(id)].update(tempdict)
+
+    '''
+        如果最后一个元素是一个列表，更改列表里面的某条数据
+    '''
+    def peekUpdateListById(self, id, fieldIndex, value):
+        returnStr = ''
+        find = False
+        if isinstance(StackListUtils.header.get_val(), list):
+            for indextable in StackListUtils.header.get_val():
+                if not list(indextable).__len__() == 0:
+                    if indextable[0] == id:
+                        find = True
+                        indexOfIndextable = list(StackListUtils.header.get_val()).index(list(indextable))
+                        StackListUtils.header.get_val()[indexOfIndextable][fieldIndex+1] = value
+                        returnStr = '一条记录被更改'
+            if find == False:
+                returnStr = 'id不存在'
+        else:
+            returnStr = '栈的最后一个元素不是列表'
+        return returnStr
 
     def isEmpty(self):
         if(StackListUtils.header.get_next() == None):

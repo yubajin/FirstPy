@@ -2,11 +2,12 @@
 from test.StackListUtils import *
 import re
 
-class databaseByDictory(object):
+class databaseByList(object):
     def __init__(self):
         self.__tables = StackListUtils()
         self.__tables.push([])#数据用列表存储
         self.__fields = []
+        self.__lendth = 0#列表的长度
         self.scoreColumn = []
         self.weightColumn = []
         self.__id = 0
@@ -68,21 +69,24 @@ class databaseByDictory(object):
     创建表
     '''
     def create_table(self, fields):#给数据库中创建以传入参数作为字段的表
-        self.addTable({})
+        self.addTable([])
         self.setId(0)
         self.setFields(fields)
         return '创建表的属性:' + str(self.getFields())
 
     def add_recode(self, values):
         fields = self.getFields()
-        recode = dict(self.getPeekTable())#获得数据库中正在操作的表对象
-        recode.setdefault(self.plusId())#id自增,{id:content} content:{'':'','':''...}
-        field_value = zip(fields,list(values))#将表的字段和值以键值对的形式打包在一起,需要字段和值严格一一对应
-        content = {}
-        for (field,value) in field_value:
-            content.setdefault(field,value)
-        recode[self.getId()] = content
+        recode = list(self.getPeekTable())#获得数据库中正在操作的表对象
+        self.plusId()#id自增
+        fields_values = zip(fields,list(values))#将表的字段和值以键值对的形式打包在一起,需要字段和值严格一一对应
+
+        content = []
+        content.append(self.getId())
+        for (field,value) in fields_values:
+            content.append(value)
+        recode.append(content)
         self.setPeekTable(recode)
+
         return '增加一条记录'
 
     '''
@@ -104,30 +108,29 @@ class databaseByDictory(object):
         self.getPeekTable()
 
     def selectAll(self, table):
-        self.setScoreColumn()#扫描带score的列
-        self.setWeightColumn()#扫描带weight的列
-        if not self.getScoreColumn().__len__() == 0 and not self.getWeightColumn().__len__() == 0:
-            self.calAverage(self.getScoreColumn(),self.getWeightColumn(),'average')
+        # self.setScoreColumn()#扫描带score的列
+        # self.setWeightColumn()#扫描带weight的列
+        # if not self.getScoreColumn().__len__() == 0 and not self.getWeightColumn().__len__() == 0:
+        #     self.calAverage(self.getScoreColumn(),self.getWeightColumn(),'average')
         fields_num = self.getFields().__len__()#获取属性个数
         recodeCount = 0#数记录总共条数
         if not fields_num == 0:
             header_wrap = '+---------------' * fields_num + '+---------------+'
             formatStr = '|%-15s' * fields_num + '|%-15s|'
-            keys = self.getFields()
+            indexs = self.getFields()
             fields = []
             fields.append('id')
-            for key in keys:
-                fields.append(key)
-            header = (formatStr) % (tuple(fields))
+            for index in indexs:
+                fields.append(index)
+            header = (formatStr) % (tuple(fields))#打印第一行
             print(header_wrap)
             print(header)
             print(header_wrap)
-            for key, value in dict(table).items():#遍历每一条记录
+            for indexrecode in list(table):#遍历每一条记录
                 recodeCount = recodeCount + 1
                 recodesValue = []
-                recodesValue.append(int(key))
-                for i in range(1,fields_num + 1):#遍历每条记录的每个属性
-                    recodeValue = table[key][(fields[i])]
+                for i in list(indexrecode):#遍历每条记录的每个属性
+                    recodeValue = i
                     recodesValue.append(recodeValue)
                 result = (formatStr) % (tuple(recodesValue))
                 print(result)
@@ -138,11 +141,14 @@ class databaseByDictory(object):
         pass
 
     def del_recode(self, id):
-        self.getTables().peekDelDicById(id)
-        return '一条记录被删除'
+        return self.getTables().peekDelListById(id)
 
     def update_recode(self, id, field, value):
-        self.getTables().peekUpdateDicById(id, field, value)
+        fieldIndex = -1
+        for i in self.getFields():
+            if field == i:
+                fieldIndex = self.getFields().index(i)
+        print(self.getTables().peekUpdateListById(id, fieldIndex, value))
 
     ''' 
         增加单个数据库字段
@@ -151,9 +157,12 @@ class databaseByDictory(object):
     def alter_table(self, field):
         fields_num = self.getFields().__len__()  # 获取原来属性个数
         self.getFields().append(field)
-        for key, value in dict(self.getPeekTable()).items():  # 遍历每一条记录
-            if isinstance(self.getPeekTable()[key],dict):
-                self.getPeekTable()[key][(self.getFields()[fields_num])] = None
+        for indexTable in list(self.getPeekTable()):  # 遍历每一条记录
+            if isinstance(indexTable,list):
+                indexTable_len = list(indexTable).__len__()
+                self.getPeekTable()[list(self.getPeekTable()).index(indexTable)][indexTable_len:] = [None]
+                print('alter after:',list(self.getPeekTable()[list(self.getPeekTable()).index(indexTable)]))
+                # list(self.getPeekTable()[list(self.getPeekTable()).index(indexTable)]).extend(None)
         return '增加了一个字段'
 
     def run(self):
@@ -223,3 +232,25 @@ class databaseByDictory(object):
                 print(self.alter_table(addField))
             elif (userinput == 'exit()'):
                 flag = True
+
+db = databaseByList()
+print(db.create_table(['name','guowen_score','guowen_weight','math_score','math_weight']))
+print(db.add_recode(['zhangshang',89,2,94,3]))#需要检查创建表的属性要与增加记录的值的个数一一对应
+print(db.add_recode(['lisi',87,2,98,3]))#需要检查创建表的属性要与增加记录的值的个数一一对应
+print(db.alter_table('pe_score'))
+# print(db.alter_table('pe_weight'))
+# print(db.getPeekTable())
+# db.selectAll(db.getPeekTable())
+# print(db.del_recode(1))
+# db.update_recode(2,'name','changed')#需要检查要更改的属性是否在表里存在
+
+
+print(db.getPeekTable())
+db.selectAll(db.getPeekTable())
+#
+# db.selectAll(db.sortBy(False, 'average'))
+# print(db.add_recode(['zhangshang',89,2,94,3,99,2]))
+# db.selectAll(db.getPeekTable())
+# db.selectAll(db.sortBy(True, 'average'))
+# db.add_recode(['wangwu',78,3,90,2,85.8])
+# db.run()
