@@ -275,6 +275,7 @@ db = databaseByDictory()
 # db.add_recode(['wangwu',78,3,90,2,85.8])
 db.run()
 
+#操作语句:可以按照顺序复制到控制台从上往下执行
 # create table (name,guowen_score,guowen_weight,math_score,math_weight)
 # insert table (name,guowen_score,guowen_weight,math_score,math_weight) values ('zhangshagn',94 ,2,84,3)
 # insert table (name,guowen_score,guowen_weight,math_score,math_weight) values ('lisi',89 ,2,96,3)
